@@ -68,6 +68,8 @@ def handle_text_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="Bot can't use profile API without user ID"))
+    elif text == 'ดี':
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(text="ฆวยไร")) 
     elif text == 'bye':
         if isinstance(event.source, SourceGroup):
             line_bot_api.reply_message(
@@ -251,7 +253,7 @@ def handle_content_message(event):
         return
 
     message_content = line_bot_api.get_message_content(event.message.id)
-    with tempfile.NamedTemporaryFile(dir="./", prefix=ext + '-', delete=False) as tf:
+    with tempfile.NamedTemporaryFile(dir="static/tmp/", prefix=ext + '-', delete=False) as tf:
         for chunk in message_content.iter_content():
             tf.write(chunk)
         tempfile_path = tf.name
@@ -263,7 +265,7 @@ def handle_content_message(event):
     line_bot_api.reply_message(
         event.reply_token, [
             TextSendMessage(text='Save content.'),
-            TextSendMessage(text=request.host_url + os.path.join( dist_name))
+            TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
         ])
 
 
