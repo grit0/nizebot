@@ -14,8 +14,10 @@ from linebot.models import (
     UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
     FlexSendMessage, BubbleContainer, ImageComponent, BoxComponent,
     TextComponent, SpacerComponent, IconComponent, ButtonComponent,
-    SeparatorComponent,
+    SeparatorComponent,ImageSendMessage
 )
+import json
+import requests
 import tempfile
 app = Flask(__name__)
 line_bot_api = LineBotApi('KkaTyQ0pofBLwhu5hlT5saIjW5dymPawbL5RRR1nZ0YoUMTYdlL93TzJGg3Pim2qzBSuAEgPQBYWR5OGEdZkIJDlmfVtgVtklAKqNioKO7sfBI5SG3ZBHL9+OH9LK3zUwq5p41RpRRDh+WDQTtcQUwdB04t89/1O/w1cDnyilFU=')
@@ -253,7 +255,7 @@ def handle_content_message(event):
         return
 
     message_content = line_bot_api.get_message_content(event.message.id)
-    with tempfile.NamedTemporaryFile(dir="static/tmp/", prefix=ext + '-', delete=False) as tf:
+    with tempfile.NamedTemporaryFile(dir="./static/tmp/", prefix=ext + '-', delete=False) as tf:
         for chunk in message_content.iter_content():
             tf.write(chunk)
         tempfile_path = tf.name
@@ -261,12 +263,67 @@ def handle_content_message(event):
     dist_path = tempfile_path + '.' + ext
     dist_name = os.path.basename(dist_path)
     os.rename(tempfile_path, dist_path)
-
+    path_img=request.host_url + os.path.join('static', 'tmp', dist_name)
+    url=r'https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCgIxaS6jR1rm5YVp5QlKQ_FyfV5fKkurk'
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    post_data={
+  "requests": [
+    {
+      "image": {
+        "source": {
+          "imageUri": path_img
+        }
+      },
+      "features": [
+        {
+          "type": "LANDMARK_DETECTION",
+          "maxResults": 1
+        },
+        {
+          "type": "WEB_DETECTION",
+          "maxResults": 2
+        }
+      ]
+    }
+  ]
+}
+    # print(post_data)
+    r = requests.post(url, data=json.dumps(post_data), headers=headers)
+    res=r.json()
+    print(res)
+    # predict_img=res['responses'][0]['webDetection']["visuallySimilarImages"][0]['url']
+    predict_img=res['responses'][0]['webDetection']["visuallySimilarImages"]
+    predict_label=res['responses'][0]['webDetection']["bestGuessLabels"][0]["label"]
+    # predict_text="ประเถท คือ"+predict_label+" เช่น "+res['responses'][0]['webDetection']['webEntities'][0]['description']+"\nScore : "+str(res['responses'][0]['webDetection']['webEntities'][0]['score'])
+    # print(predict_)
+    img_list=[ImageCarouselColumn(image_url=x['url'],action=PostbackAction(label="test",text='postback text1',data='action=buy&itemid=1')) for x in predict_img]
     line_bot_api.reply_message(
         event.reply_token, [
-            TextSendMessage(text='Save content.'),
-            TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
-        ])
+            # TextSendMessage(text='Save content.'),
+            # TextSendMessage(text=path_img),
+            TextSendMessage(text="เดาว่าคือ "+predict_label),
+            TemplateSendMessage(
+                alt_text='ImageCarousel template',
+                template=ImageCarouselTemplate(columns=img_list)
+)
+
+        ]
+    )
+
+
+
+#             ImageSendMessage(
+#     original_content_url=predict_img,
+#     preview_image_url=predict_img
+# ),
+# 'https://cloud.google.com/vision/images/rushmore.jpg')
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
