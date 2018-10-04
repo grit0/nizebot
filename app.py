@@ -258,6 +258,7 @@ def handle_content_message(event):
     with tempfile.NamedTemporaryFile(dir="./static/tmp/", prefix=ext + '-', delete=False) as tf:
         for chunk in message_content.iter_content():
             tf.write(chunk)
+            print(chunk)
         tempfile_path = tf.name
 
     dist_path = tempfile_path + '.' + ext
@@ -312,19 +313,10 @@ def handle_content_message(event):
 
 
 
-#             ImageSendMessage(
-#     original_content_url=predict_img,
-#     preview_image_url=predict_img
-# ),
-# 'https://cloud.google.com/vision/images/rushmore.jpg')
-
-
-
-
 
 
 
 
 
 if __name__ == "__main__":
-   app.run(debug=True)
+   app.run(debug=True,host='0.0.0.0', port=7000)
